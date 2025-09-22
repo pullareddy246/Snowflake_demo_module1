@@ -18,7 +18,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install snowflake-connector-python
 
       - name: Run SQL scripts
@@ -34,6 +34,7 @@ jobs:
             echo "Running $file"
             python - <<EOF
 import snowflake.connector
+import sys
 
 ctx = snowflake.connector.connect(
     user="${{ env.SNOWFLAKE_USER }}",
@@ -47,8 +48,10 @@ ctx = snowflake.connector.connect(
 cs = ctx.cursor()
 with open("$file", "r") as f:
     sql = f.read()
-cs.execute(sql)
+try:
+    cs.execute(sql)
+except Exception as e:
+    print(f"Error in {file}: {e}")
+    sys.exit(1)  # Stop workflow on error
 cs.close()
 ctx.close()
-EOF
-    
